@@ -1,0 +1,4 @@
+config load @OPT_CONFIG_FILE@
+@ADDITIONAL_COMMANDS@
+project generate
+exit

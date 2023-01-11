@@ -1,0 +1,73 @@
+{
+    "line_width": 200,
+    "tab_size": 2,
+    "max_subgroups_hwrap": 2,
+    "max_pargs_hwrap": 6,
+    "max_rows_cmdline": 2,
+    "separate_ctrl_name_with_space": true,
+    "separate_fn_name_with_space": false,
+    "dangle_parens": true,
+    "dangle_align": "prefix",
+    "line_ending": "unix",
+    "command_case": "canonical",
+    "keyword_case": "upper",
+    "always_wrap": [],
+    "enable_sort": true,
+    "autosort": true,
+    
+    "bullet_char": "*",
+    "enum_char": ".",
+    "first_comment_is_literal": true,
+    "literal_comment_pattern": null,
+    "fence_pattern": "^\\s*([`~]{3}[`~]*)(.*)$",
+    "ruler_pattern": "^\\s*[^\\w\\s]{3}.*[^\\w\\s]{3}$",
+    "enable_markup": true,
+
+    "additional_commands": {
+        "bob_get_compiler_support": {},
+        "bob_get_formatting_support": {},
+        "bob_get_sonarqube_support": {
+            "kwargs": {
+                "API_KEY": "1",
+                "HOST_URL": "1",
+                "PROJECT_KEY": "1",
+                "THREADS": "1",
+                "EXCLUSIONS": "*"
+            }
+        }, 
+        "bob_get_cpu_support": {
+            "pargs": "1"
+        },
+        "bob_create_roboot_bootloader_file": {
+            "kwargs": {
+                "OUT_FILE": "1",
+                "IN_FILE": "1",
+                "DEVICE": "1",
+                "FLASH_ADDRESS": "1",
+                "APP_ID": "1",
+                "USER_DATA": "1"
+            }
+        },
+        "bob_create_embepack_bootloader_file": {
+            "kwargs": {
+                "OUT_FILE": "1",
+                "IN_FILE": "1",
+                "IN_FILE_ADDR": "1",
+                "NAMEPLATE_SW": "1",
+                "NAMEPLATE_SW_ADDR": "1",
+                "ENCRYPTION_ALGORITHM": "1",
+                "ENCRYPTION_KEY": "1",
+                "PAGE_SIZE": "1"
+            }
+        },
+        "bob_flash_using": {
+            "kwargs": {
+                "TOOL_NAME": "1",
+                "FLASH_FILE": "1",
+                "FLASH_ADDRESS": "1",
+                "CLI_ARG": "*"
+            }
+        }
+        
+    }
+}

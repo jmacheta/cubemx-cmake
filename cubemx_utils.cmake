@@ -85,7 +85,10 @@ function (CubeMX_AddLibrary NAME)
     set(GENERATE_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/cubemx_generate_script.txt)
     configure_file(${CUBEMX_CMAKE_DIR}/cubemx_generate_script.txt.in ${GENERATE_SCRIPT} @ONLY)
 
-    cmake_language(GET_MESSAGE_LOG_LEVEL CURRENT_OUTPUT_VERBOSITY)
+    if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.25.0")
+      cmake_language(GET_MESSAGE_LOG_LEVEL CURRENT_OUTPUT_VERBOSITY)
+    endif ()
+
     if ("TRACE" STREQUAL CURRENT_OUTPUT_VERBOSITY)
       execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${GENERATE_SCRIPT} COMMAND_ERROR_IS_FATAL ANY)
     else ()

@@ -1,4 +1,23 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.21)
+
+set(CUBEMX_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
+
+if (DEFINED ENV{CUBEMX_DIR})
+  set(CUBEMX_DIR "$ENV{CUBEMX_DIR}")
+endif ()
+if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+  set(CUBEMX_DEFAULT_DIR_WINDOWS "C:/Program Files/STMicroelectronics/STM32Cube/STM32CubeMX")
+  find_file(CUBEMX STM32CubeMX.exe HINTS ${CUBEMX_DIR} ${CUBEMX_DEFAULT_DIR_WINDOWS})
+else ()
+  set(CUBEMX_DEFAULT_DIR_LINUX "$ENV{HOME}/STM32CubeMX")
+  find_file(CUBEMX STM32CubeMX HINTS ${CUBEMX_DIR} ${CUBEMX_DEFAULT_DIR_LINUX})
+endif ()
+
+get_filename_component(CUBEMX_DIR "${CUBEMX}" DIRECTORY CACHE)
+
+set(CUBEMX_JRE "${CUBEMX_DIR}/jre/bin/java" CACHE PATH "CubeMX Java instance")
+
+include(${CUBEMX_CMAKE_DIR}/makefile_parser.cmake)
 
 function (CubeMX_AddLibrary NAME)
   set(FLAGS FORCE NO_LDSCRIPT NO_STARTUP)
@@ -6,6 +25,7 @@ function (CubeMX_AddLibrary NAME)
   set(MULTI_ARGS ADDITIONAL_COMMANDS)
   cmake_parse_arguments(OPT "${FLAGS}" "${SINGLE_ARGS}" "${MULTI_ARGS}" ${ARGN})
   message(STATUS "Configuring CubeMX target ${NAME}")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
 
   if (OPT_UNPARSED_ARGUMENTS)
     message(FATAL_ERROR "Unrecognized arguments: ${OPT_UNPARSED_ARGUMENTS}")
@@ -48,34 +68,32 @@ function (CubeMX_AddLibrary NAME)
     string(APPEND ADDITIONAL_COMMANDS "${CMD}\n")
   endforeach ()
 
-  set(GENERATED_MAKEFILE ${DESTINATION}/Makefile)
-
-  set(DO_GENERATE_SOURCES TRUE)
-
-  if ((NOT OPT_FORCE)
-      AND (EXISTS ${GENERATED_MAKEFILE})
-      AND (${NAME}_CUBEMX_GENERATED_CHECKSUM)
-  )
-    file(SHA1 ${OPT_CONFIG_FILE} CONFIG_FILE_CHECKSUM)
-    if (${NAME}_CUBEMX_GENERATED_CHECKSUM EQUAL CONFIG_FILE_CHECKSUM)
-      message(STATUS "Found existing project files and config file is unchanged. Skipping generation step (use the FORCE if I messed up)")
-      set(DO_GENERATE_SOURCES FALSE)
-    endif ()
+  if (OPT_FORCE)
+    message(DEBUG "FORCE option enabled. This will enforce CubeMX code generation.")
   endif ()
 
-  if (DO_GENERATE_SOURCES)
+  set(MAKEFILE ${DESTINATION}/Makefile)
+  set(METADATA_FILE ${DESTINATION}/.cmake_generated)
+
+  _project_changed(PROJECT_CHANGED)
+
+  if (PROJECT_CHANGED OR OPT_FORCE)
+    if (PROJECT_CHANGED)
+      message(STATUS "CubeMX project files changed. for target ${NAME}")
+    endif ()
+    set(GENERATE_SOURCES TRUE)
+  else ()
+    set(GENERATE_SOURCES FALSE)
+    message(STATUS "Found existing project files and config file is unchanged. Skipping generation")
+  endif ()
+
+  if (GENERATE_SOURCES)
     message(STATUS "Generating CubeMX project files for target ${NAME}")
     set(GENERATE_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/cubemx_generate_script.txt)
     configure_file(${CUBEMX_CMAKE_DIR}/cubemx_generate_script.txt.in ${GENERATE_SCRIPT} @ONLY)
-
     execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${GENERATE_SCRIPT} OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY)
 
-    # Calculate checksum again - CubeMX might modify a file
-    file(SHA1 ${OPT_CONFIG_FILE} CONFIG_FILE_CHECKSUM)
-    set(${NAME}_CUBEMX_GENERATED_CHECKSUM
-        ${CONFIG_FILE_CHECKSUM}
-        CACHE INTERNAL "" FORCE
-    )
+    _generate_checksum_file("${METADATA_FILE}")
 
     # When destination or name differs from the one, stored in config file, CubeMX tends to generate new config in destination directory. Remove it to decrease mess
     if (EXISTS ${DESTINATION}/${NAME}.ioc)
@@ -86,8 +104,7 @@ function (CubeMX_AddLibrary NAME)
     message(STATUS "Generating CubeMX project files for target ${NAME} - done")
   endif ()
 
-  parse_makefile(${GENERATED_MAKEFILE})
-  set(LDSCRIPT ${DESTINATION}/${LDSCRIPT_VALUE})
+  parse_makefile(${MAKEFILE})
   _to_absolute("${DESTINATION}" "${C_SOURCES_VALUE}" C_SOURCES)
   _to_absolute("${DESTINATION}" "${ASM_SOURCES_VALUE}" ASM_SOURCES)
 
@@ -100,19 +117,21 @@ function (CubeMX_AddLibrary NAME)
 
   add_library(${NAME} OBJECT ${C_SOURCES})
   if (NOT OPT_NO_STARTUP)
-    message(VERBOSE "CubeMX ${NAME} target will use startup code from: ${ASM_SOURCES}")
     target_sources(${NAME} PRIVATE ${ASM_SOURCES})
+    message(VERBOSE "CubeMX ${NAME} target will use startup code from: ${ASM_SOURCES}")
   endif ()
 
   target_include_directories(${NAME} PUBLIC ${C_INCLUDES})
   target_compile_definitions(${NAME} PUBLIC ${C_DEFINES})
 
   if (NOT OPT_NO_LDSCRIPT)
-    message(VERBOSE "CubeMX ${NAME} target will use LDSCRIPT: ${LDSCRIPT}")
+    set(LDSCRIPT ${DESTINATION}/${LDSCRIPT_VALUE})
     target_link_options(${NAME} PUBLIC -T ${LDSCRIPT})
+    message(VERBOSE "CubeMX ${NAME} target will use LDSCRIPT: ${LDSCRIPT}")
   endif ()
-  message(STATUS "Configuring CubeMX target ${NAME} - done")
 
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(STATUS "Configuring CubeMX target ${NAME} - done")
 endfunction ()
 
 function (_to_absolute PREFIX PATHS OUT_VAR)
@@ -125,8 +144,36 @@ function (_to_absolute PREFIX PATHS OUT_VAR)
     endif ()
   endforeach ()
 
-  set(${OUT_VAR}
-      "${OUT_LIST}"
-      PARENT_SCOPE
-  )
+  set(${OUT_VAR} "${OUT_LIST}" PARENT_SCOPE)
+endfunction ()
+
+function (_generate_checksum_file METADATA_FILE)
+  message(DEBUG "Generating Metadata file ${METADATA_FILE}")
+  file(SHA1 ${OPT_CONFIG_FILE} CONFIG_FILE_CHECKSUM)
+  set(CONFIG_CHECKSUM_STRING "CONFIG_CHECKSUM: ${CONFIG_FILE_CHECKSUM}")
+
+  file(SHA1 ${MAKEFILE} MAKEFILE_FILE_CHECKSUM)
+  set(MAKEFILE_CHECKSUM_STRING "MAKEFILE_CHECKSUM: ${MAKEFILE_FILE_CHECKSUM}")
+
+  file(WRITE "${METADATA_FILE}" "${CONFIG_CHECKSUM_STRING}\n${MAKEFILE_CHECKSUM_STRING}")
+  message(TRACE "Metadata content: ${CONFIG_CHECKSUM_STRING}\n${MAKEFILE_CHECKSUM_STRING}")
+endfunction ()
+
+function (_project_changed HAS_CHANGED)
+  if (EXISTS ${METADATA_FILE} AND EXISTS ${MAKEFILE})
+    file(SHA1 ${OPT_CONFIG_FILE} CONFIG_FILE_CHECKSUM)
+    set(CONFIG_CHECKSUM_STRING "CONFIG_CHECKSUM: ${CONFIG_FILE_CHECKSUM}")
+
+    file(SHA1 ${MAKEFILE} MAKEFILE_FILE_CHECKSUM)
+    set(MAKEFILE_CHECKSUM_STRING "MAKEFILE_CHECKSUM: ${MAKEFILE_FILE_CHECKSUM}")
+
+    file(STRINGS ${METADATA_FILE} METADATA)
+
+    if ((MAKEFILE_CHECKSUM_STRING IN_LIST METADATA) AND CONFIG_CHECKSUM_STRING IN_LIST METADATA)
+      set(${HAS_CHANGED} FALSE PARENT_SCOPE)
+      return()
+    endif ()
+  endif ()
+
+  set(${HAS_CHANGED} TRUE PARENT_SCOPE)
 endfunction ()

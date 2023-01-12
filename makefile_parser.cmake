@@ -46,15 +46,9 @@ function (parse_makefile MAKEFILE)
 
   list(REMOVE_DUPLICATES MAKEFILE_VARIABLES)
   foreach (VAR IN LISTS MAKEFILE_VARIABLES)
-    set(${VAR}_VALUE
-        ${${VAR}_VALUE}
-        PARENT_SCOPE
-    )
+    set(${VAR}_VALUE ${${VAR}_VALUE} PARENT_SCOPE)
   endforeach ()
-  set(MAKEFILE_VARIABLES
-      ${MAKEFILE_VARIABLES}
-      PARENT_SCOPE
-  )
+  set(MAKEFILE_VARIABLES ${MAKEFILE_VARIABLES} PARENT_SCOPE)
 
   message(DEBUG "VARIABLES: ${MAKEFILE_VARIABLES}")
 endfunction ()

@@ -8,7 +8,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../..) # This is not necessa
 
 find_package(cubemx_cmake REQUIRED)
 include(cubemx_utils)
-cubemx_addlibrary(basic_usage DESTINATION xd) # Adds "basic_usage" OBJECT library using implicit config file name "basic_usage.ioc". The code will be generated once and all sources will be added. The library
+cubemx_addlibrary(basic_usage) # Adds "basic_usage" OBJECT library using implicit config file name "basic_usage.ioc". The code will be generated once and all sources will be added. The library
 # has dependency to generated LDSCRIPT which is used on link-time with example_app. The library provides configured C_DEFS as public interface
 
 add_executable(example_app main.cpp)

@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
 
-
 function (parse_makefile MAKEFILE)
   file(READ "${MAKEFILE}" MAKEFILE_CONTENT)
   string(REGEX REPLACE "[\\]+[\n\r]" "" MAKEFILE_CONTENT ${MAKEFILE_CONTENT}) # Consolidate broken lines
@@ -25,7 +24,7 @@ function (parse_makefile MAKEFILE)
 
       set(${VAR_NAME}_VALUE "${VAR_VALUE_SPLITTED}")
 
-      message("VARIABLE ${VAR_NAME}   ${${VAR_NAME}_VALUE}")
+      message(DEBUG "VARIABLE ${VAR_NAME}   ${${VAR_NAME}_VALUE}")
 
     elseif (LINE MATCHES "^[A-Za-z0-9_]+[ \t]*\\+=")
       # Handle  appending case
@@ -40,7 +39,7 @@ function (parse_makefile MAKEFILE)
 
       set(${VAR_NAME}_VALUE "${VAR_VALUE_SPLITTED}")
 
-      message("VARIABLE ${VAR_NAME}   ${${VAR_NAME}_VALUE}")
+      message(DEBUG "VARIABLE ${VAR_NAME}   ${${VAR_NAME}_VALUE}")
 
     endif ()
   endforeach ()

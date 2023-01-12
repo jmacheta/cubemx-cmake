@@ -2,23 +2,6 @@ cmake_minimum_required(VERSION 3.21)
 
 set(CUBEMX_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
-if (DEFINED ENV{CUBEMX_DIR})
-  set(CUBEMX_DIR "$ENV{CUBEMX_DIR}")
-endif ()
-if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
-  set(CUBEMX_DEFAULT_DIR_WINDOWS "C:/Program Files/STMicroelectronics/STM32Cube/STM32CubeMX")
-  find_file(CUBEMX STM32CubeMX.exe HINTS ${CUBEMX_DIR} ${CUBEMX_DEFAULT_DIR_WINDOWS})
-else ()
-  set(CUBEMX_DEFAULT_DIR_LINUX "$ENV{HOME}/STM32CubeMX")
-  find_file(CUBEMX STM32CubeMX HINTS ${CUBEMX_DIR} ${CUBEMX_DEFAULT_DIR_LINUX})
-endif ()
-
-get_filename_component(CUBEMX_DIR "${CUBEMX}" DIRECTORY CACHE)
-
-set(CUBEMX_JRE "${CUBEMX_DIR}/jre/bin/java" CACHE PATH "CubeMX Java instance")
-
-include(${CUBEMX_CMAKE_DIR}/makefile_parser.cmake)
-
 function (CubeMX_AddLibrary NAME)
   set(FLAGS FORCE NO_LDSCRIPT NO_STARTUP)
   set(SINGLE_ARGS CONFIG_FILE DESTINATION)
@@ -26,6 +9,11 @@ function (CubeMX_AddLibrary NAME)
   cmake_parse_arguments(OPT "${FLAGS}" "${SINGLE_ARGS}" "${MULTI_ARGS}" ${ARGN})
   message(STATUS "Configuring CubeMX target ${NAME}")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
+
+  if (NOT CUBEMX)
+    message(STATUS "Looking for CubeMX executable")
+    _find_cubemx_executable()
+  endif ()
 
   if (OPT_UNPARSED_ARGUMENTS)
     message(FATAL_ERROR "Unrecognized arguments: ${OPT_UNPARSED_ARGUMENTS}")
@@ -55,8 +43,13 @@ function (CubeMX_AddLibrary NAME)
     message(FATAL_ERROR "Configuring CubeMX target \"${NAME}\" failed - Target with the same name already exists")
   endif ()
 
+  get_filename_component(CONFIG_FILE_DIR ${OPT_CONFIG_FILE} DIRECTORY)
+
   if (NOT OPT_DESTINATION)
-    get_filename_component(OPT_DESTINATION ${OPT_CONFIG_FILE} DIRECTORY)
+    set(OPT_DESTINATION ${CONFIG_FILE_DIR})
+  elseif (NOT IS_ABSOLUTE "${OPT_DESTINATION}")
+    message(DEBUG "DESTINATION is not absolute path. Assuming it is relative to current source directory")
+    set(OPT_DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/${OPT_DESTINATION}")
   endif ()
 
   set(DESTINATION ${OPT_DESTINATION}/${NAME})
@@ -84,14 +77,14 @@ function (CubeMX_AddLibrary NAME)
     set(GENERATE_SOURCES TRUE)
   else ()
     set(GENERATE_SOURCES FALSE)
-    message(STATUS "Found existing project files and config file is unchanged. Skipping generation")
+    message(STATUS "Project configuration and Makefile unchanged. Skipping code generation step")
   endif ()
 
   if (GENERATE_SOURCES)
     message(STATUS "Generating CubeMX project files for target ${NAME}")
     set(GENERATE_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/cubemx_generate_script.txt)
     configure_file(${CUBEMX_CMAKE_DIR}/cubemx_generate_script.txt.in ${GENERATE_SCRIPT} @ONLY)
-    execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${GENERATE_SCRIPT} OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY)
+    execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${GENERATE_SCRIPT}) # OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY)
 
     _generate_checksum_file("${METADATA_FILE}")
 
@@ -104,6 +97,9 @@ function (CubeMX_AddLibrary NAME)
     message(STATUS "Generating CubeMX project files for target ${NAME} - done")
   endif ()
 
+  include(${CUBEMX_CMAKE_DIR}/makefile_parser.cmake)
+
+  message(STATUS "Configuring library target for ${NAME}")
   parse_makefile(${MAKEFILE})
   _to_absolute("${DESTINATION}" "${C_SOURCES_VALUE}" C_SOURCES)
   _to_absolute("${DESTINATION}" "${ASM_SOURCES_VALUE}" ASM_SOURCES)
@@ -129,6 +125,8 @@ function (CubeMX_AddLibrary NAME)
     target_link_options(${NAME} PUBLIC -T ${LDSCRIPT})
     message(VERBOSE "CubeMX ${NAME} target will use LDSCRIPT: ${LDSCRIPT}")
   endif ()
+
+  message(STATUS "Configuring library target for ${NAME} - done")
 
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(STATUS "Configuring CubeMX target ${NAME} - done")
@@ -177,3 +175,20 @@ function (_project_changed HAS_CHANGED)
 
   set(${HAS_CHANGED} TRUE PARENT_SCOPE)
 endfunction ()
+
+macro (_find_cubemx_executable)
+
+  if (DEFINED ENV{CUBEMX_DIR})
+    set(CUBEMX_DIR "$ENV{CUBEMX_DIR}")
+  endif ()
+  if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+    set(CUBEMX_DEFAULT_DIR_WINDOWS "C:/Program Files/STMicroelectronics/STM32Cube/STM32CubeMX")
+    find_file(CUBEMX STM32CubeMX.exe HINTS ${CUBEMX_DIR} ${CUBEMX_DEFAULT_DIR_WINDOWS} REQUIRED)
+  else ()
+    set(CUBEMX_DEFAULT_DIR_LINUX "$ENV{HOME}/STM32CubeMX")
+    find_file(CUBEMX STM32CubeMX HINTS ${CUBEMX_DIR} ${CUBEMX_DEFAULT_DIR_LINUX} REQUIRED)
+  endif ()
+
+  get_filename_component(CUBEMX_DIR "${CUBEMX}" DIRECTORY CACHE)
+  set(CUBEMX_JRE "${CUBEMX_DIR}/jre/bin/java" CACHE PATH "CubeMX Java instance")
+endmacro ()

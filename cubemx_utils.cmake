@@ -84,7 +84,13 @@ function (CubeMX_AddLibrary NAME)
     message(STATUS "Generating CubeMX project files for target ${NAME}")
     set(GENERATE_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/cubemx_generate_script.txt)
     configure_file(${CUBEMX_CMAKE_DIR}/cubemx_generate_script.txt.in ${GENERATE_SCRIPT} @ONLY)
-    execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${GENERATE_SCRIPT}) # OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY)
+
+    cmake_language(GET_MESSAGE_LOG_LEVEL CURRENT_OUTPUT_VERBOSITY)
+    if ("TRACE" STREQUAL CURRENT_OUTPUT_VERBOSITY)
+      execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${GENERATE_SCRIPT} COMMAND_ERROR_IS_FATAL ANY)
+    else ()
+      execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${GENERATE_SCRIPT} OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY)
+    endif ()
 
     _generate_checksum_file("${METADATA_FILE}")
 

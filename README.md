@@ -77,3 +77,7 @@ By using ```ADDITIONAL_COMMANDS``` it is possible to customize CubeMX generation
 ## Limitations
 
 By desing I only support CubeMX Makefile projects. If provided .ioc file uses different generator, it will be overriden (see cubemx_generate_script)
+
+## Non-Affiliation Disclaimer
+
+This package is not endorsed by, directly affiliated with, maintained, authorized, or sponsored by STMicroelectronics. All product and company names are the registered trademarks of their original owners. The use of any trade name or trademark is for identification and reference purposes only and does not imply any association with the trademark holder of their product brand.

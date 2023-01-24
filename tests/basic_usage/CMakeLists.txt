@@ -4,9 +4,6 @@ set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/stm32l476_toolchain.cmake C
 
 project(cubemx_cmake_basic_usage LANGUAGES CXX C ASM)
 
-list(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/../..) # This is not necessary when using FetchContent
-
-find_package(cubemx_cmake REQUIRED)
 cubemx_addlibrary(basic_usage) # Adds "basic_usage" OBJECT library using implicit config file name "basic_usage.ioc". The code will be generated once and all sources will be added. The library
 # has dependency to generated LDSCRIPT which is used on link-time with example_app. The library provides configured C_DEFS as public interface
 

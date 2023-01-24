@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/stm32l476_toolchain.cmake CACHE INTERNAL "" FORCE) # Hardcoded toolchain file to ease generation using CLI
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../stm32l476_toolchain.cmake CACHE INTERNAL "" FORCE) # Hardcoded toolchain file to ease generation using CLI
 
 project(cubemx_cmake_basic_usage LANGUAGES CXX C ASM)
 

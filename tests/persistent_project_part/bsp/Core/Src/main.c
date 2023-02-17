@@ -54,7 +54,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void my_very_important_function(void) {
+int my_very_important_function(void) {
   return 42;
 }
 /* USER CODE END 0 */

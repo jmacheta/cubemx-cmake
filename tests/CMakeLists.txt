@@ -1,7 +1,26 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(CubeMX-cmake-tests)
+project(cubemx_cmake_tests)
 
-add_subdirectory(basic_usage)
-add_subdirectory(persistent_project_part)
-add_subdirectory(generation_caching)
+include(ExternalProject)
+
+ExternalProject_Add(
+  basic_usage
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/basic_usage
+  CMAKE_ARGS --toolchain=${CMAKE_CURRENT_SOURCE_DIR}/stm32l476_toolchain.cmake
+)
+
+
+ExternalProject_Add(
+  persistent_project_part
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/persistent_project_part
+  CMAKE_ARGS --toolchain=${CMAKE_CURRENT_SOURCE_DIR}/stm32l476_toolchain.cmake
+
+)
+
+
+ExternalProject_Add(
+  generation_caching
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generation_caching
+  CMAKE_ARGS --toolchain=${CMAKE_CURRENT_SOURCE_DIR}/stm32l476_toolchain.cmake
+)

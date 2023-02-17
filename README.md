@@ -13,7 +13,7 @@ The easiest way is to use built-in CMake FetchContent:
 include(FetchContent)
 FetchContent_Declare(
     cubemx_cmake
-    GIT_REPOSITORY https://gitlab.com/elMachete/cubemx-cmake.git
+    GIT_REPOSITORY https://github.com/jmacheta/cubemx-cmake.git
     GIT_TAG main
 )
 
@@ -77,6 +77,16 @@ By using ```ADDITIONAL_COMMANDS``` it is possible to customize CubeMX generation
 ## Limitations
 
 By desing I only support CubeMX Makefile projects. If provided .ioc file uses different generator, it will be overriden (see cubemx_generate_script)
+
+Currently I don't see a need to support generating executable targets - If you need to create exec, create a dummy file and link with the generated library:
+
+```cmake
+file(TOUCH dummy.c)
+add_executable(my_exec dummy.c)
+target_link_libraries(my_exec my_generated_library)
+```
+
+If you think, that separate executable function should be implemented, feel free to contact me ;)
 
 ## Non-Affiliation Disclaimer
 

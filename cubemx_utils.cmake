@@ -29,7 +29,7 @@ if (NOT CUBEMX)
   set(CUBEMX_JRE "${CUBEMX_HOME}/jre/bin/java" CACHE PATH "CubeMX Java instance")
 endif ()
 
-function (CubeMX_AddLibrary NAME)
+function (cubemx_add_library NAME)
   set(FLAGS FORCE NO_LDSCRIPT NO_STARTUP NO_DEFS)
   set(SINGLE_ARGS CONFIG_FILE DESTINATION)
   set(MULTI_ARGS ADDITIONAL_COMMANDS)

@@ -29,7 +29,7 @@ Alternatively, you can add this repo as a submodule, and simply use ```add_subdi
 > If you have installed CubeMX in different directory, set either environment variable CUBEMX_DIR, or cmake variable BEFORE FetchContent_MakeAvailable
 
 ```cmake
-cubemx_addlibrary(<path_to_ioc_file>) ## eg. C:/my_hardware.ioc, my_hardware.ioc (assuming it exists in current source dir), or simply my_hardware (.ioc file extension is assumed)
+cubemx_add_library(<path_to_ioc_file>) ## eg. C:/my_hardware.ioc, my_hardware.ioc (assuming it exists in current source dir), or simply my_hardware (.ioc file extension is assumed)
 
 # Add some application to link with.
 add_executable(my_app main.cpp) 
@@ -45,7 +45,7 @@ target_link_libraries(my_app PRIVATE my_hardware)
 Basic signature:
 
 ```cmake
-cubemx_addlibrary(<name>)
+cubemx_add_library(<name>)
 ```
 
 The basic signature assumes that the name of the target to generate is the same as the name of CubeMX configuration file, and it exists in current source directory. If so, The function will generate the code using CubeMX, and create Cmake OBJECT library with all sources, compile definitions, and LDSCRIPT.
@@ -55,7 +55,7 @@ Regardless of the mode used, a .cmake_generated file will be created in the dest
 Full signature:
 
 ```cmake
-cubemx_addlibrary(<TargetName> [CONFIG_FILE <path>] [DESTINATION <path>]
+cubemx_add_library(<TargetName> [CONFIG_FILE <path>] [DESTINATION <path>]
     [NO_STARTUP]
     [NO_LDSCRIPT]
     [FORCE]

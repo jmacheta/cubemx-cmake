@@ -118,7 +118,7 @@ macro (find_cubemx)
   find_cubemx_standalone()
 
   if (NOT CUBEMX OR NOT CUBEMX_JRE)
-    # find_cubemx_cubeide()
+    find_cubemx_cubeide()
   endif ()
 
   list(POP_BACK CMAKE_MESSAGE_INDENT)

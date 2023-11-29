@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.21)
-
 function (parse_makefile MAKEFILE)
   file(READ "${MAKEFILE}" MAKEFILE_CONTENT)
   string(REGEX REPLACE "[\\]+[\n\r]" "" MAKEFILE_CONTENT ${MAKEFILE_CONTENT}) # Consolidate broken lines

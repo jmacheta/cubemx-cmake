@@ -3,7 +3,7 @@ set(CUBEMX_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "cubemx-cmake sour
 include(${CUBEMX_CMAKE_DIR}/find_cubemx.cmake)
 include(${CUBEMX_CMAKE_DIR}/makefile_parser.cmake)
 
-if (NOT CUBEMX)
+if (NOT CUBEMX OR NOT CUBEMX_JRE)
   find_cubemx()
 endif ()
 

@@ -7,24 +7,27 @@ function (find_cubemx_standalone)
   set(CUBEMX_DEFAULT_DIR_WINDOWS "C:/Program Files/STMicroelectronics/STM32Cube/STM32CubeMX")
   set(CUBEMX_REGISTRY_PATH "[HKLM/SOFTWARE/WOW6432Node/Microsoft/Windows/CurrentVersion/App Paths/STM32CubeMX.exe;Path]")
 
-  find_file(CUBEMX_HOME NAMES STM32CubeMX STM32CubeMX.exe STM32CubeMX.jar PATHS $ENV{CUBEMX_DIR} ${CUBEMX_DIR} ${CUBEMX_DEFAULT_DIR_LINUX} ${CUBEMX_DEFAULT_DIR_WINDOWS} ${CUBEMX_REGISTRY_PATH})
+  find_file(CUBEMX_I NAMES STM32CubeMX STM32CubeMX.exe STM32CubeMX.jar PATHS $ENV{CUBEMX_DIR} ${CUBEMX_DIR} ${CUBEMX_DEFAULT_DIR_LINUX} ${CUBEMX_DEFAULT_DIR_WINDOWS} ${CUBEMX_REGISTRY_PATH})
 
-  if (NOT CUBEMX_HOME)
+  if (NOT CUBEMX_I)
     message(CHECK_FAIL "not found")
     return()
   endif ()
 
+  get_filename_component(CUBEMX_HOME "${CUBEMX_I}" DIRECTORY)
   message(CHECK_PASS "found at ${CUBEMX_HOME}")
-
+  
   message(CHECK_START "Looking for JRE")
   message(TRACE "CubeMX home directory: ${CUBEMX_HOME}")
+  
   find_file(JRE_EXE java HINTS "${CUBEMX_HOME}/jre/bin")
   if (NOT JRE_EXE)
     message(CHECK_FAIL "not found")
     return()
   endif ()
   message(CHECK_PASS "found")
-  set(CUBEMX "${CUBEMX_HOME}/STM32CubeMX" CACHE PATH "CubeMX instance")
+
+  set(CUBEMX "${CUBEMX_I}" CACHE PATH "CubeMX instance")
   set(CUBEMX_JRE "${CUBEMX_HOME}/jre/bin/java" CACHE PATH "CubeMX Java instance")
 endfunction ()
 

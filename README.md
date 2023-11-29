@@ -11,11 +11,7 @@ The easiest way is to use built-in CMake FetchContent:
 
 ```cmake
 include(FetchContent)
-FetchContent_Declare(
-    cubemx_cmake
-    GIT_REPOSITORY https://github.com/jmacheta/cubemx-cmake.git
-    GIT_TAG main
-)
+FetchContent_Declare(cubemx_cmake URL https://github.com/jmacheta/cubemx-cmake/tarball/latest)
 
 FetchContent_MakeAvailable(cubemx_cmake)
 ```

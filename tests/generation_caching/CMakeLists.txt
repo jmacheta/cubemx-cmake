@@ -12,7 +12,7 @@ file(TIMESTAMP ${CMAKE_CURRENT_SOURCE_DIR}/my_library/Makefile MAKEFILE_MODIFICA
 message("Makefile modification timestamp after second generation attempt: ${MAKEFILE_MODIFICATION_TIME2}")
 
 if (NOT MAKEFILE_MODIFICATION_TIME1 STREQUAL MAKEFILE_MODIFICATION_TIME2)
-  message(FATAL_ERROR "CubeMX project generated again where it shouln't")
+  message(FATAL_ERROR "CubeMX project generated again where it shouldn't")
 endif ()
 
 # Ignore error that add_library is not scriptable

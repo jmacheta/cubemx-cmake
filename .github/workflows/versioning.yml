@@ -1,0 +1,16 @@
+name: Update latest tag
+
+on:
+  release:
+    types:
+      - released
+      - edited
+
+jobs:
+  update-latest-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EndBug/latest-tag@latest

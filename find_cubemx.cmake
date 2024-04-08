@@ -20,7 +20,7 @@ function (find_cubemx_standalone)
   message(CHECK_START "Looking for JRE")
   message(TRACE "CubeMX home directory: ${CUBEMX_HOME}")
   
-  find_file(JRE_EXE java HINTS "${CUBEMX_HOME}/jre/bin")
+  find_file(JRE_EXE NAMES java java.exe HINTS "${CUBEMX_HOME}/jre/bin")
   if (NOT JRE_EXE)
     message(CHECK_FAIL "not found")
     return()
@@ -45,7 +45,7 @@ function (find_cubeide)
   endif ()
 
   # Gather instances from Windows default installation path
-  set(CUBEIDE_DEFAULT_DIR_WINDOWS "E:/ST")
+  set(CUBEIDE_DEFAULT_DIR_WINDOWS "C:/ST")
   file(GLOB CUBEIDE_DIRS "${CUBEIDE_DEFAULT_DIR_WINDOWS}/STM32CubeIDE_*")
   list(SORT CUBEIDE_DIRS ORDER DESCENDING)
   list(APPEND CUBEIDE_PATHS "${CUBEIDE_DIRS}")

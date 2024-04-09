@@ -5,9 +5,47 @@ set(CUBEMX_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "cubemx-cmake sour
 include(${CUBEMX_CMAKE_DIR}/find_cubemx.cmake)
 include(${CUBEMX_CMAKE_DIR}/makefile_parser.cmake)
 
-if (NOT CUBEMX OR NOT CUBEMX_JRE)
-  find_cubemx()
-endif ()
+function (cubemx_add_library_from NAME MAKEFILE)
+  set(FLAGS FORCE NO_LDSCRIPT NO_STARTUP NO_DEFS)
+  set(SINGLE_ARGS)
+  set(MULTI_ARGS)
+  cmake_parse_arguments(OPT "${FLAGS}" "${SINGLE_ARGS}" "${MULTI_ARGS}" ${ARGN})
+
+  message(STATUS "Configuring library target for ${NAME}")
+
+  get_filename_component(DESTINATION ${MAKEFILE} DIRECTORY)
+
+  parse_makefile(${MAKEFILE})
+  _to_absolute("${DESTINATION}" "${C_SOURCES_VALUE}" C_SOURCES)
+  _to_absolute("${DESTINATION}" "${ASM_SOURCES_VALUE}" ASM_SOURCES)
+
+  set(C_INCLUDES ${C_INCLUDES_VALUE})
+  list(TRANSFORM C_INCLUDES REPLACE "-I" "")
+  _to_absolute("${DESTINATION}" "${C_INCLUDES}" C_INCLUDES)
+
+  if (NOT OPT_NO_DEFS)
+    set(C_DEFINES ${C_DEFS_VALUE})
+    list(TRANSFORM C_DEFINES REPLACE "-D" "")
+  endif ()
+
+  add_library(${NAME} OBJECT ${C_SOURCES})
+  if (NOT OPT_NO_STARTUP)
+    target_sources(${NAME} PRIVATE ${ASM_SOURCES})
+    message(VERBOSE "CubeMX ${NAME} target will use startup code from: ${ASM_SOURCES}")
+  endif ()
+
+  target_include_directories(${NAME} PUBLIC ${C_INCLUDES})
+  target_compile_definitions(${NAME} PUBLIC ${C_DEFINES})
+
+  if (NOT OPT_NO_LDSCRIPT)
+    set(LDSCRIPT ${DESTINATION}/${LDSCRIPT_VALUE})
+    target_link_options(${NAME} PUBLIC -T ${LDSCRIPT})
+    message(VERBOSE "CubeMX ${NAME} target will use LDSCRIPT: ${LDSCRIPT}")
+  endif ()
+
+  message(STATUS "Configuring library target for ${NAME} - done")
+
+endfunction ()
 
 function (cubemx_add_library NAME)
   set(FLAGS FORCE NO_LDSCRIPT NO_STARTUP NO_DEFS)
@@ -23,6 +61,14 @@ function (cubemx_add_library NAME)
 
   if (OPT_KEYWORDS_MISSING_VALUES)
     message(FATAL_ERROR "Missing values for keywords: ${OPT_KEYWORDS_MISSING_VALUES}")
+  endif ()
+
+  if (TARGET ${NAME})
+    message(FATAL_ERROR "Configuring CubeMX target \"${NAME}\" failed - Target with the same name already exists")
+  endif ()
+
+  if (NOT CUBEMX OR NOT CUBEMX_JRE)
+    find_cubemx()
   endif ()
 
   if (NOT OPT_CONFIG_FILE)
@@ -41,20 +87,16 @@ function (cubemx_add_library NAME)
     message(FATAL_ERROR "Configuring CubeMX target ${NAME} failed - Configuration file \"${OPT_CONFIG_FILE}\" does not exist")
   endif ()
 
-  if (TARGET ${NAME})
-    message(FATAL_ERROR "Configuring CubeMX target \"${NAME}\" failed - Target with the same name already exists")
-  endif ()
-
   get_filename_component(CONFIG_FILE_DIR ${OPT_CONFIG_FILE} DIRECTORY)
 
   if (NOT OPT_DESTINATION)
-    set(OPT_DESTINATION ${CONFIG_FILE_DIR})
+    set(DESTINATION ${CONFIG_FILE_DIR})
+    set(IMPLICIT_DESTINATION TRUE) # Will skip project path and project name options in generation script - otherwise the other child folder would be generated
   elseif (NOT IS_ABSOLUTE "${OPT_DESTINATION}")
     message(DEBUG "DESTINATION is not absolute path. Assuming it is relative to current source directory")
-    set(OPT_DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/${OPT_DESTINATION}")
+    set(DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/${OPT_DESTINATION}")
   endif ()
 
-  set(DESTINATION ${OPT_DESTINATION}/${NAME})
   message(VERBOSE "Using destination directory: ${DESTINATION}")
 
   set(ADDITIONAL_COMMANDS)
@@ -104,36 +146,7 @@ function (cubemx_add_library NAME)
     message(STATUS "Generating CubeMX project files for target ${NAME} - done")
   endif ()
 
-  message(STATUS "Configuring library target for ${NAME}")
-  parse_makefile(${MAKEFILE})
-  _to_absolute("${DESTINATION}" "${C_SOURCES_VALUE}" C_SOURCES)
-  _to_absolute("${DESTINATION}" "${ASM_SOURCES_VALUE}" ASM_SOURCES)
-
-  set(C_INCLUDES ${C_INCLUDES_VALUE})
-  list(TRANSFORM C_INCLUDES REPLACE "-I" "")
-  _to_absolute("${DESTINATION}" "${C_INCLUDES}" C_INCLUDES)
-
-  if (NOT OPT_NO_DEFS)
-    set(C_DEFINES ${C_DEFS_VALUE})
-    list(TRANSFORM C_DEFINES REPLACE "-D" "")
-  endif ()
-
-  add_library(${NAME} OBJECT ${C_SOURCES})
-  if (NOT OPT_NO_STARTUP)
-    target_sources(${NAME} PRIVATE ${ASM_SOURCES})
-    message(VERBOSE "CubeMX ${NAME} target will use startup code from: ${ASM_SOURCES}")
-  endif ()
-
-  target_include_directories(${NAME} PUBLIC ${C_INCLUDES})
-  target_compile_definitions(${NAME} PUBLIC ${C_DEFINES})
-
-  if (NOT OPT_NO_LDSCRIPT)
-    set(LDSCRIPT ${DESTINATION}/${LDSCRIPT_VALUE})
-    target_link_options(${NAME} PUBLIC -T ${LDSCRIPT})
-    message(VERBOSE "CubeMX ${NAME} target will use LDSCRIPT: ${LDSCRIPT}")
-  endif ()
-
-  message(STATUS "Configuring library target for ${NAME} - done")
+  cubemx_add_library_from(${NAME} ${MAKEFILE} ${ARGN})
 
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(STATUS "Configuring CubeMX target ${NAME} - done")

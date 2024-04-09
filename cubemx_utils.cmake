@@ -47,6 +47,24 @@ function (cubemx_add_library_from NAME MAKEFILE)
 
 endfunction ()
 
+function (cubemx_generate SCRIPT)
+  if (NOT CUBEMX OR NOT CUBEMX_JRE)
+    find_cubemx()
+  endif ()
+  message(STATUS "Generating CubeMX project files")
+  if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.25.0")
+    cmake_language(GET_MESSAGE_LOG_LEVEL CURRENT_OUTPUT_VERBOSITY)
+  endif ()
+
+  if ("TRACE" STREQUAL CURRENT_OUTPUT_VERBOSITY)
+    execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${SCRIPT} COMMAND_ERROR_IS_FATAL ANY)
+  else ()
+    execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${SCRIPT} OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY)
+  endif ()
+
+  message(STATUS "Generating CubeMX project files - done")
+endfunction ()
+
 function (cubemx_add_library NAME)
   set(FLAGS FORCE NO_LDSCRIPT NO_STARTUP NO_DEFS)
   set(SINGLE_ARGS CONFIG_FILE DESTINATION)
@@ -67,37 +85,21 @@ function (cubemx_add_library NAME)
     message(FATAL_ERROR "Configuring CubeMX target \"${NAME}\" failed - Target with the same name already exists")
   endif ()
 
-  if (NOT CUBEMX OR NOT CUBEMX_JRE)
-    find_cubemx()
-  endif ()
-
   if (NOT OPT_CONFIG_FILE)
-    message(VERBOSE "CONFIG_FILE not specified. Using ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.ioc")
-    set(OPT_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.ioc")
+    message(VERBOSE "CONFIG_FILE not specified. Using ${NAME}.ioc")
+    set(OPT_CONFIG_FILE "${NAME}.ioc")
   endif ()
 
-  if (NOT IS_ABSOLUTE ${OPT_CONFIG_FILE})
-    message(DEBUG "CONFIG_FILE is not absolute path. Assuming it exists in current source directory")
-    set(OPT_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${OPT_CONFIG_FILE})
-  endif ()
-
-  message(DEBUG "Checking if ${OPT_CONFIG_FILE} exists")
-
-  if (NOT EXISTS "${OPT_CONFIG_FILE}")
-    message(FATAL_ERROR "Configuring CubeMX target ${NAME} failed - Configuration file \"${OPT_CONFIG_FILE}\" does not exist")
-  endif ()
-
-  get_filename_component(CONFIG_FILE_DIR ${OPT_CONFIG_FILE} DIRECTORY)
+  cmake_path(ABSOLUTE_PATH OPT_CONFIG_FILE BASE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} NORMALIZE)
+  cmake_path(GET OPT_CONFIG_FILE PARENT_PATH CONFIG_FILE_DIR)
 
   if (NOT OPT_DESTINATION)
-    set(DESTINATION ${CONFIG_FILE_DIR})
-    set(IMPLICIT_DESTINATION TRUE) # Will skip project path and project name options in generation script - otherwise the other child folder would be generated
-  elseif (NOT IS_ABSOLUTE "${OPT_DESTINATION}")
-    message(DEBUG "DESTINATION is not absolute path. Assuming it is relative to current source directory")
-    set(DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/${OPT_DESTINATION}")
+    message(VERBOSE "DESTINATION not specified. Using ${CONFIG_FILE_DIR}")
+    set(OPT_DESTINATION ${CONFIG_FILE_DIR})
   endif ()
 
-  message(VERBOSE "Using destination directory: ${DESTINATION}")
+  cmake_path(ABSOLUTE_PATH OPT_DESTINATION BASE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} NORMALIZE)
+  message(VERBOSE "Using destination directory: ${OPT_DESTINATION}")
 
   set(ADDITIONAL_COMMANDS)
   message(VERBOSE "Using additional commands:${OPT_ADDITIONAL_COMMANDS}")
@@ -109,41 +111,39 @@ function (cubemx_add_library NAME)
     message(DEBUG "FORCE option enabled. This will enforce CubeMX code generation.")
   endif ()
 
-  set(MAKEFILE ${DESTINATION}/Makefile)
-  set(METADATA_FILE ${DESTINATION}/.cmake_generated)
+  message(DEBUG "Checking if ${OPT_CONFIG_FILE} exists")
+  if (NOT EXISTS "${OPT_CONFIG_FILE}")
+    message(FATAL_ERROR "Configuring CubeMX target ${NAME} failed - Configuration file \"${OPT_CONFIG_FILE}\" does not exist")
+  endif ()
+
+  set(METADATA_FILE ${OPT_DESTINATION}/.cmake_generated)
+  set(MAKEFILE ${OPT_DESTINATION}/Makefile)
 
   _project_changed(PROJECT_CHANGED)
 
   if (PROJECT_CHANGED OR OPT_FORCE)
     if (PROJECT_CHANGED)
-      message(STATUS "CubeMX project files changed. for target ${NAME}")
+      message(STATUS "CubeMX project files changed for target ${NAME}")
     endif ()
-    set(GENERATE_SOURCES TRUE)
-  else ()
-    set(GENERATE_SOURCES FALSE)
-    message(STATUS "Project configuration and Makefile unchanged. Skipping code generation step")
-  endif ()
 
-  if (GENERATE_SOURCES)
-    message(STATUS "Generating CubeMX project files for target ${NAME}")
+    # Check whether the destination directory is different from the configuration file directory. If it is, we need to alter the destination path and project name for CubeMX in order to generate the
+    # project files in the correct directory.
+    set(CUBEMX_PROJECT_NAME "")
+    set(CUBEMX_PROJECT_PATH "")
+    cmake_path(COMPARE ${CONFIG_FILE_DIR} EQUAL ${OPT_DESTINATION} INPLACE_GENERATION)
+    if (NOT INPLACE_GENERATION)
+      cmake_path(GET OPT_DESTINATION PARENT_PATH DESTINATION_PARENT)
+      cmake_path(RELATIVE_PATH OPT_DESTINATION BASE_DIRECTORY ${DESTINATION_PARENT} OUTPUT_VARIABLE DESTINATION_LAST)
+      set(CUBEMX_PROJECT_NAME "project name ${DESTINATION_LAST}")
+      set(CUBEMX_PROJECT_PATH "project path ${DESTINATION_PARENT}")
+    endif ()
+
     set(GENERATE_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/cubemx_generate_script.txt)
+
     configure_file(${CUBEMX_CMAKE_DIR}/cubemx_generate_script.txt.in ${GENERATE_SCRIPT} @ONLY)
-
-    if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.25.0")
-      cmake_language(GET_MESSAGE_LOG_LEVEL CURRENT_OUTPUT_VERBOSITY)
-    endif ()
-
-    if ("TRACE" STREQUAL CURRENT_OUTPUT_VERBOSITY)
-      execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${GENERATE_SCRIPT} COMMAND_ERROR_IS_FATAL ANY)
-    else ()
-      execute_process(COMMAND ${CUBEMX_JRE} -jar ${CUBEMX} -q ${GENERATE_SCRIPT} OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY)
-    endif ()
-
+    cubemx_generate(${GENERATE_SCRIPT})
     _generate_checksum_file("${METADATA_FILE}")
-
     file(REMOVE ${GENERATE_SCRIPT})
-
-    message(STATUS "Generating CubeMX project files for target ${NAME} - done")
   endif ()
 
   cubemx_add_library_from(${NAME} ${MAKEFILE} ${ARGN})

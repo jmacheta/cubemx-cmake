@@ -99,10 +99,6 @@ function (cubemx_add_library NAME)
 
     _generate_checksum_file("${METADATA_FILE}")
 
-    # When destination or name differs from the one, stored in config file, CubeMX tends to generate new config in destination directory. Remove it to decrease mess
-    if (EXISTS ${DESTINATION}/${NAME}.ioc)
-      file(REMOVE ${DESTINATION}/${NAME}.ioc)
-    endif ()
     file(REMOVE ${GENERATE_SCRIPT})
 
     message(STATUS "Generating CubeMX project files for target ${NAME} - done")

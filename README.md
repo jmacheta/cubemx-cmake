@@ -12,9 +12,7 @@ The easiest way is to use built-in CMake FetchContent:
 ```cmake
 include(FetchContent)
 FetchContent_Declare(
-    cubemx_cmake
-    GIT_REPOSITORY https://github.com/jmacheta/cubemx-cmake.git
-    GIT_TAG main
+    cubemx_cmake URL https://github.com/jmacheta/cubemx-cmake/archive/refs/tags/latest.zip
 )
 
 FetchContent_MakeAvailable(cubemx_cmake)
@@ -42,10 +40,24 @@ target_link_libraries(my_app PRIVATE my_hardware)
 
 ## API Reference
 
+```
+Generate CubeMX project from .ioc file, then add a library target
+
+    cubemx_add_library(<name>)
+
+Add a library target from existing CubeMX-generated Makefile
+
+    cubemx_add_library_from(<name> <makefile_path>)
+
+Generate CubeMX project
+
+    cubemx_generate(<generate_script_path>)
+```
+
 Basic signature:
 
 ```cmake
-cubemx_add_library(<name>)
+cubemx_add_library(<TargetName>)
 ```
 
 The basic signature assumes that the name of the target to generate is the same as the name of CubeMX configuration file, and it exists in current source directory. If so, The function will generate the code using CubeMX, and create Cmake OBJECT library with all sources, compile definitions, and LDSCRIPT.
@@ -66,13 +78,22 @@ cubemx_add_library(<TargetName> [CONFIG_FILE <path>] [DESTINATION <path>]
 The ```CONFIG_FILE``` option specifies path to .ioc file. It is useful when you want to specify ```TargetName``` that differs from the config file name.
 If relative path is used, it is assumed that it is relative to ```CMAKE_CURRENT_SOURCE_DIR```
 
-By default, the code will be generated in <config_file_directory>/```TargetName``` directory. If different destination is needed, ```DESTINATION``` option should specify required directory. If relative path is used, it is assumed that it is relative to ```CMAKE_CURRENT_SOURCE_DIR```
+The code will be generated in <config_file_directory> directory. If different destination is needed, ```DESTINATION``` option should specify required directory. If relative path is used, it is assumed that it is relative to ```CMAKE_CURRENT_SOURCE_DIR```
 
 Generated target will enforce linking with generated LDSCRIPT unless ```NO_LDSCRIPT``` option is provided.
 
 If it is desired to execute code generation every time CMake is configures, use ```FORCE``` option.
 
 By using ```ADDITIONAL_COMMANDS``` it is possible to customize CubeMX generation script: pass command sequence as consecutive arguments
+
+
+```cmake
+cubemx_add_library_from(<name> <makefile_path> [NO_LDSCRIPT] [NO_STARTUP] [NO_DEFS])
+```
+Adds a library target from existing Makefile. This function Does Not look for CubeMX instance, so might be useful when none is present.
+The other options do the same as in ```cubemx_add_library```
+
+
 
 ## Limitations
 

@@ -11,10 +11,7 @@ The easiest way is to use built-in CMake FetchContent:
 
 ```cmake
 include(FetchContent)
-FetchContent_Declare(
-    cubemx_cmake URL https://github.com/jmacheta/cubemx-cmake/archive/refs/tags/latest.zip
-)
-
+FetchContent_Declare(cubemx_cmake URL https://github.com/jmacheta/cubemx-cmake/tarball/latest)
 FetchContent_MakeAvailable(cubemx_cmake)
 ```
 

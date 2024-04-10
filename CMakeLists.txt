@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(cubemx_cmake VERSION 1.0.1)
+project(cubemx_cmake VERSION 1.0.2)
 
 option(CUBEMX_CMAKE_BUILD_TESTS "Forces building test cases" OFF)
 

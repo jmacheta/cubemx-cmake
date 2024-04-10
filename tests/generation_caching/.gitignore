@@ -1,0 +1,6 @@
+*
+!.gitignore
+!config.ioc
+!CMakeLists.txt
+!try_generate.cmake
+!main.cpp

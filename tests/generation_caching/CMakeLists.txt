@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(cubemx_cmake_basic_usage LANGUAGES CXX C ASM)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cubemx_utils.cmake)
+find_cubemx()
 # Ignore error that add_library is not scriptable
 execute_process(ERROR_QUIET COMMAND ${CMAKE_COMMAND} -DCUBEMX:PATH=${CUBEMX} -DCUBEMX_JRE:PATH=${CUBEMX_JRE} -P ${CMAKE_CURRENT_LIST_DIR}/try_generate.cmake)
 file(TIMESTAMP ${CMAKE_CURRENT_SOURCE_DIR}/my_library/Makefile MAKEFILE_MODIFICATION_TIME1)
